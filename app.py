@@ -2,6 +2,7 @@
 # Hotel Review Sentiment Analysis Web App
 
 import re
+import os
 import pickle
 import numpy as np
 import streamlit as st
@@ -9,29 +10,39 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import nltk
 from nltk.corpus import stopwords
+import gdown
 
 st.set_page_config(
     page_title="Hotel Review Sentiment Analyzer",
     layout="centered")
+
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.image("picture.jpg", width=300)
 st.title("Hotel Review Sentiment Analysis")
 st.write("Enter a hotel review to predict its sentiment.")
+
 nltk.download("stopwords")
 stop_words = set(stopwords.words("english"))
 MAX_LEN = 200
 
+MODEL_PATH = "bilstm_sentiment_model.keras"
+GDRIVE_FILE_ID = "1MrvUFsiFLF7K7Yo6Jfljy48_Fbtvj3eR"
+
+def download_model_from_gdrive():
+    if not os.path.exists(MODEL_PATH):
+        url = f"https://drive.google.com/uc?id={GDRIVE_FILE_ID}"
+        gdown.download(url, MODEL_PATH, quiet=False)
 @st.cache_resource
 def load_artifacts():
-    model = load_model("bilstm_sentiment_model.keras")
+    download_model_from_gdrive()
+    model = load_model(MODEL_PATH)
     with open("tokenizer.pkl", "rb") as f:
         tokenizer = pickle.load(f)
     with open("label_encoder.pkl", "rb") as f:
         label_encoder = pickle.load(f)
     return model, tokenizer, label_encoder
 model, tokenizer, label_encoder = load_artifacts()
-
 def clean_text(text):
     text = text.lower()
     text = re.sub(r"[^a-z\s]", " ", text)
@@ -89,7 +100,6 @@ if st.button("Analyze Sentiment"):
             unsafe_allow_html=True)
         st.markdown(
             f"**Second Most Likely:** {second_sentiment} ({second_conf:.2f}%)")
-
 st.markdown("---")
 st.markdown(
     "<p style='text-align: center;'>Made by Ayush Anand - Final Capstone Project 3 - IITG Course</p>",
